@@ -20,6 +20,22 @@ const (
 	FourScreenMirroring
 )
 
+// CalculateMirroringType determines the mirroring type according to the bit values present in the
+// first ROM control byte.
+func CalculateMirroringType(bit3, bit0 bool) MirroringType {
+	var mt MirroringType
+	switch {
+	case bit3:
+		mt = FourScreenMirroring
+	case bit0:
+		mt = VerticalMirroring
+	default:
+		mt = HorizontalMirroring
+	}
+
+	return mt
+}
+
 // INESPrefix is the magic number used to identify an iNES file.
 var INESPrefix = [4]byte{'N', 'E', 'S', 0x1A}
 
@@ -66,20 +82,10 @@ func LoadCartridge(reader io.Reader) (*Cartridge, error) {
 		return &Cartridge{}, nil
 	}
 
-	var mirroringType MirroringType
-	switch {
-	case buff[3]&8 == 8:
-		mirroringType = FourScreenMirroring
-	case buff[3]&1 == 1:
-		mirroringType = VerticalMirroring
-	default:
-		mirroringType = HorizontalMirroring
-	}
-
 	cartridge := &Cartridge{
 		PrgROMBanks:        buff[0],
 		ChrROMBanks:        buff[1],
-		MirroringType:      mirroringType,
+		MirroringType:      CalculateMirroringType(buff[3]&8 == 8, buff[3]&1 == 1),
 		HasBatterBackedRAM: buff[2]&2 == 2,
 		Has512Trainer:      buff[2]&4 == 4,
 		MapperNumber:       (buff[3] & 240) | ((buff[2] & 240) >> 4),

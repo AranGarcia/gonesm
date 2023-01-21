@@ -8,6 +8,47 @@ import (
 	"testing"
 )
 
+func TestCalculateMirroringType(t *testing.T) {
+	tests := []struct {
+		name string
+		bit3 bool
+		bit0 bool
+		want MirroringType
+	}{
+		{
+			name: "horizontal",
+			bit3: false,
+			bit0: false,
+			want: HorizontalMirroring,
+		},
+		{
+			name: "vertical",
+			bit3: false,
+			bit0: true,
+			want: VerticalMirroring,
+		},
+		{
+			name: "four screen",
+			bit3: true,
+			bit0: false,
+			want: FourScreenMirroring,
+		},
+		{
+			name: "vertical(overwritten) = four screen",
+			bit3: true,
+			bit0: true,
+			want: FourScreenMirroring,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := CalculateMirroringType(tt.bit3, tt.bit0); got != tt.want {
+				t.Errorf("CalculateMirroringType() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestLoadCartridge(t *testing.T) {
 	tests := []struct {
 		name    string
