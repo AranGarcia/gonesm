@@ -7,6 +7,12 @@ import (
 	"io"
 )
 
+const (
+	ChrROMBankSize = 0x2000
+	PrgROMBankSize = 0x4000
+	PrgRAMBankSize = 0x2000
+)
+
 var (
 	ErrInvalidArgument = errors.New("invalid argument")
 )
@@ -54,8 +60,13 @@ type Cartridge struct {
 	Has512Trainer bool
 	// MapperNumber TODO: IDK what this does yet.
 	MapperNumber uint8
-	// RAMBanks describes the amount of 8 KB RAM banks.
-	RAMBanks uint8
+	// PRGRAMBanks describes the amount of 8 KB RAM banks.
+	PRGRAMBanks uint8
+
+	Trainer [512]byte
+	ChrROM  []byte
+	PrgROM  []byte
+	PrgRAM  []byte
 }
 
 // LoadCartridge reads data from the input stream and parses the game data.
@@ -91,10 +102,24 @@ func LoadCartridge(reader io.Reader) (*Cartridge, error) {
 		MapperNumber:       (buff[3] & 240) | ((buff[2] & 240) >> 4),
 	}
 	if buff[4] == 0 {
-		cartridge.RAMBanks = 1
+		cartridge.PRGRAMBanks = 1
 	} else {
-		cartridge.RAMBanks = buff[4]
+		cartridge.PRGRAMBanks = buff[4]
 	}
+
+	// Load 512-byte trainer
+	if cartridge.Has512Trainer {
+		reader.Read(cartridge.Trainer[:])
+	}
+
+	// CHR ROM data
+	cartridge.ChrROM = make([]byte, ChrROMBankSize*int(cartridge.ChrROMBanks))
+	reader.Read(cartridge.ChrROM)
+
+	// PRG ROM and RAAM
+	cartridge.PrgROM = make([]byte, PrgROMBankSize*int(cartridge.PrgROMBanks))
+	reader.Read(cartridge.PrgROM)
+	cartridge.PrgRAM = make([]byte, PrgRAMBankSize*int(cartridge.PRGRAMBanks))
 
 	return cartridge, nil
 }

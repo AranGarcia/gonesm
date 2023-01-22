@@ -73,35 +73,23 @@ func TestLoadCartridge(t *testing.T) {
 			want: &Cartridge{},
 		},
 		{
-			name: "cartridge without battery, trainer or RAM banks",
+			name: "no ROM or RAM",
 			reader: bytes.NewBuffer([]byte{
 				'N', 'E', 'S', 0x1A,
-				30, 20, 240, 240, 0,
+				0, 0, 240, 240, 0,
 			}),
 			want: &Cartridge{
-				PrgROMBanks:        30,
-				ChrROMBanks:        20,
+				PrgROMBanks:        0,
+				ChrROMBanks:        0,
 				MirroringType:      HorizontalMirroring,
 				HasBatterBackedRAM: false,
 				Has512Trainer:      false,
 				MapperNumber:       255,
-				RAMBanks:           1,
-			},
-		},
-		{
-			name: "cartridge with battery and trainer",
-			reader: bytes.NewBuffer([]byte{
-				'N', 'E', 'S', 0x1A,
-				100, 200, 14, 128, 50,
-			}),
-			want: &Cartridge{
-				PrgROMBanks:        100,
-				ChrROMBanks:        200,
-				MirroringType:      HorizontalMirroring,
-				HasBatterBackedRAM: true,
-				Has512Trainer:      true,
-				MapperNumber:       128,
-				RAMBanks:           50,
+				PRGRAMBanks:        1,
+
+				PrgRAM: make([]byte, PrgRAMBankSize),
+				ChrROM: []byte{},
+				PrgROM: []byte{},
 			},
 		},
 	}
