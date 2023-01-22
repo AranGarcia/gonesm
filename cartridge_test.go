@@ -66,6 +66,13 @@ func TestLoadCartridge(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "no cartridge data",
+			reader: bytes.NewBuffer([]byte{
+				'N', 'E', 'S', 0x1A,
+			}),
+			want: &Cartridge{},
+		},
+		{
 			name: "cartridge without battery, trainer or RAM banks",
 			reader: bytes.NewBuffer([]byte{
 				'N', 'E', 'S', 0x1A,
