@@ -21,9 +21,9 @@ func (b *Bus) Read() {
 	case addr < 0x0100:
 		// Zero Page
 	case addr < 0x0200: // Stack
-		b.Data = b.CPU_Stack[addr]
+		b.Data = b.CPU_Stack[addr-0x0100]
 	case addr < 0x0800: // CPU RAM
-		b.Data = b.CPU_RAM[addr]
+		b.Data = b.CPU_RAM[addr-0x0200]
 	case addr < 0x2000:
 		// Mirrors ($0000-$07FF)
 	case addr < 0x2008:
@@ -35,11 +35,11 @@ func (b *Bus) Read() {
 	case addr < 0x6000:
 		// Expansion ROM
 	case addr < 0x8000: // SRAM
-		b.Data = b.Cartridge.PrgRAM[addr]
+		b.Data = b.Cartridge.PrgRAM[addr-0x600]
 	case addr < 0xC000: // PRG-ROM lower bank
-		b.Data = b.Mapper.ReadLowerBank(addr)
+		b.Data = b.Mapper.ReadLowerBank(addr - 0x8000)
 	default: // PRG-ROM upper bank (addr < 0x10000)
-		b.Data = b.Mapper.ReadUpperBank(addr)
+		b.Data = b.Mapper.ReadUpperBank(addr - 0xC000)
 	}
 }
 
@@ -51,9 +51,9 @@ func (b *Bus) Write() {
 	case addr < 0x0100:
 		// Zero Page
 	case addr < 0x0200: // Stack
-		b.CPU_Stack[addr] = data
+		b.CPU_Stack[addr-0x0100] = data
 	case addr < 0x0800: // CPU RAM
-		b.Data = b.CPU_RAM[addr]
+		b.Data = b.CPU_RAM[addr-0x0200]
 	case addr < 0x2000:
 		// Mirrors ($0000-$07FF)
 	case addr < 0x2008:
@@ -65,11 +65,11 @@ func (b *Bus) Write() {
 	case addr < 0x6000:
 		// Expansion ROM
 	case addr < 0x8000: // SRAM
-		b.Cartridge.PrgRAM[addr] = data
+		b.Cartridge.PrgRAM[addr-0x6000] = data
 	case addr < 0xC000: // PRG-ROM lower bank
-		b.Data = b.Mapper.ReadLowerBank(addr)
+		b.Data = b.Mapper.ReadLowerBank(addr - 0x8000)
 	default: // PRG-ROM upper bank (addr < 0x10000)
-		b.Data = b.Mapper.ReadUpperBank(addr)
+		b.Data = b.Mapper.ReadUpperBank(addr - 0xC000)
 	}
 }
 
