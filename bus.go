@@ -1,6 +1,10 @@
 package segno
 
+import "log"
+
 type Bus struct {
+	logger log.Logger
+
 	// FIXME: abstract these into proper definitions outside the Bus.
 	CPU_RAM   []uint8
 	CPU_Stack []uint8
@@ -52,19 +56,19 @@ func (b *Bus) Write(addr uint16, data uint8) {
 		// ...
 		b.CPU_RAM[addr&0x07FF] = data
 	case addr < 0x2008: // I/O Registers
-		// TODO: Log: can't write to I/O device
+		b.logger.Printf("attempted to write to I/O device in address %x", addr)
 	case addr < 0x4000:
 		// Mirrors ($2000-$2007)
 	case addr < 0x4020: // I/O Registers
-		// TODO: Log: can't write to I/O device
+		b.logger.Printf("attempted to write to I/O device in address %x", addr)
 	case addr < 0x6000:
-		// TODO: Log: Can't write to ROM
+		b.logger.Printf("attempted to write to Expansion ROM in address %x", addr)
 	case addr < 0x8000: // SRAM
 		b.Cartridge.PrgRAM[addr-0x6000] = data
 	case addr < 0xC000: // PRG-ROM lower bank
-		// TODO: Log: Can't write to ROM
+		b.logger.Printf("attempted to write to PRG ROM in address %x", addr)
 	default: // PRG-ROM upper bank (addr < 0x10000)
-		// TODO: Log: Can't write to ROM
+		b.logger.Printf("attempted to write to PRG ROM in address %x", addr)
 	}
 }
 
