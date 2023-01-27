@@ -14,14 +14,14 @@ func (b *Bus) Read(addr uint16) uint8 {
 	var data uint8
 
 	switch {
-	case addr < 0x0100:
-		// Zero Page
-	case addr < 0x0200: // Stack
-		data = b.CPU_Stack[addr-0x0100]
-	case addr < 0x0800: // CPU RAM
-		data = b.CPU_RAM[addr-0x0200]
-	case addr < 0x2000:
-		// Mirrors ($0000-$07FF)
+	case addr < 0x2000: // CPU RAM
+		// These three are written to 4 different addresses. That's why it's ANDed with 0x07FF.
+		// Zero Page	0x0000 - 0x00FF
+		// Stack		0x0100 - 0x01FF
+		// RAM			0x0200 - 0x07FF
+		// Zero Page	0x0800 - 0x08FF (Mirrored from 0x0000 - 0x00FF
+		// ...
+		data = b.CPU_RAM[addr&0x07FF]
 	case addr < 0x2008: // I/O Registers
 		data = b.IORegister.Read(addr - 0x2000)
 	case addr < 0x4000:
@@ -43,14 +43,14 @@ func (b *Bus) Read(addr uint16) uint8 {
 
 func (b *Bus) Write(addr uint16, data uint8) {
 	switch {
-	case addr < 0x0100:
-		// Zero Page
-	case addr < 0x0200: // Stack
-		b.CPU_Stack[addr-0x0100] = data
-	case addr < 0x0800: // CPU RAM
-		b.CPU_RAM[addr-0x0200] = data
 	case addr < 0x2000:
-		// Mirrors ($0000-$07FF)
+		// These three are written to 4 different addresses. That's why it's ANDed with 0x07FF.
+		// Zero Page	0x0000 - 0x00FF
+		// Stack		0x0100 - 0x01FF
+		// RAM			0x0200 - 0x07FF
+		// Zero Page	0x0800 - 0x08FF (Mirrored from 0x0000 - 0x00FF)
+		// ...
+		b.CPU_RAM[addr&0x07FF] = data
 	case addr < 0x2008: // I/O Registers
 		// TODO: Log: can't write to I/O device
 	case addr < 0x4000:
