@@ -1,19 +1,39 @@
 package segno
 
-import "log"
+import (
+	"bytes"
+	"log"
+)
 
-type Bus struct {
-	logger log.Logger
-
-	// FIXME: abstract these into proper definitions outside the Bus.
-	CPU_RAM   []uint8
-	CPU_Stack []uint8
-
-	Cartridge  *Cartridge
-	IORegister IORegister
-	Mapper     Mapper
+// NESComponents are the digital devices that are part of the NES architecture.
+type NESComponents struct {
+	// Cartridge represents the port where the Cartridge is connected to the main bus of the NES.
+	Cartridge *Cartridge
+	// Mapper is the memory mapper that switches banks of the cartridge's ROMs.
+	Mapper Mapper
 }
 
+// Bus is the communication channel between the NESComponents.
+type Bus struct {
+	logger *log.Logger
+
+	cpuRAM     [2048]byte
+	cartridge  *Cartridge
+	ioRegister IORegister
+	mapper     Mapper
+}
+
+// NewBus returns an initialized Bus that takes the components and maps them into the internal
+// state. Additionally, it initializes a logger.
+func NewBus(components *NESComponents) *Bus {
+	return &Bus{
+		logger:    log.New(&bytes.Buffer{}, "bus: ", log.Lmicroseconds),
+		cartridge: components.Cartridge,
+		mapper:    components.Mapper,
+	}
+}
+
+// Read attempts to read a device located in the address.
 func (b *Bus) Read(addr uint16) uint8 {
 	var data uint8
 
@@ -25,26 +45,27 @@ func (b *Bus) Read(addr uint16) uint8 {
 		// RAM			0x0200 - 0x07FF
 		// Zero Page	0x0800 - 0x08FF (Mirrored from 0x0000 - 0x00FF
 		// ...
-		data = b.CPU_RAM[addr&0x07FF]
+		data = b.cpuRAM[addr&0x07FF]
 	case addr < 0x2008: // I/O Registers
-		data = b.IORegister.Read(addr - 0x2000)
+		data = b.ioRegister.Read(addr - 0x2000)
 	case addr < 0x4000:
 		// Mirrors ($2000-$2007)
 	case addr < 0x4020: // I/O Registers
-		data = b.IORegister.Read(addr - 0x4000)
+		data = b.ioRegister.Read(addr - 0x4000)
 	case addr < 0x6000: // Expansion ROM
-		data = b.Mapper.ReadExpansion(addr - 0x4020)
+		data = b.mapper.ReadExpansion(addr - 0x4020)
 	case addr < 0x8000: // SRAM
-		data = b.Cartridge.PrgRAM[addr-0x600]
+		data = b.cartridge.PrgRAM[addr-0x600]
 	case addr < 0xC000: // PRG-ROM lower bank
-		data = b.Mapper.ReadLowerBank(addr - 0x8000)
+		data = b.mapper.ReadLowerBank(addr - 0x8000)
 	default: // PRG-ROM upper bank (addr < 0x10000)
-		data = b.Mapper.ReadUpperBank(addr - 0xC000)
+		data = b.mapper.ReadUpperBank(addr - 0xC000)
 	}
 
 	return data
 }
 
+// Write attempts to write the data into the component mapped to the address.
 func (b *Bus) Write(addr uint16, data uint8) {
 	switch {
 	case addr < 0x2000:
@@ -54,7 +75,7 @@ func (b *Bus) Write(addr uint16, data uint8) {
 		// RAM			0x0200 - 0x07FF
 		// Zero Page	0x0800 - 0x08FF (Mirrored from 0x0000 - 0x00FF)
 		// ...
-		b.CPU_RAM[addr&0x07FF] = data
+		b.cpuRAM[addr&0x07FF] = data
 	case addr < 0x2008: // I/O Registers
 		b.logger.Printf("attempted to write to I/O device in address %x", addr)
 	case addr < 0x4000:
@@ -64,7 +85,7 @@ func (b *Bus) Write(addr uint16, data uint8) {
 	case addr < 0x6000:
 		b.logger.Printf("attempted to write to Expansion ROM in address %x", addr)
 	case addr < 0x8000: // SRAM
-		b.Cartridge.PrgRAM[addr-0x6000] = data
+		b.cartridge.PrgRAM[addr-0x6000] = data
 	case addr < 0xC000: // PRG-ROM lower bank
 		b.logger.Printf("attempted to write to PRG ROM in address %x", addr)
 	default: // PRG-ROM upper bank (addr < 0x10000)
