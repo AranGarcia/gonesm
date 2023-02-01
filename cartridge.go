@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+
+	"segno/mappers"
 )
 
 const (
@@ -63,6 +65,9 @@ type Cartridge struct {
 	// PRGRAMBanks describes the amount of 8 KB RAM banks.
 	PRGRAMBanks uint8
 
+	MMC mappers.MMC
+
+	// FIXME: use MMC instead of these.
 	Trainer [512]byte
 	ChrROM  []byte
 	PrgROM  []byte
@@ -111,6 +116,9 @@ func LoadCartridge(reader io.Reader) (*Cartridge, error) {
 	if cartridge.Has512Trainer {
 		reader.Read(cartridge.Trainer[:])
 	}
+
+	// FIXME: load CHR and PRG bank data here, not below
+	cartridge.MMC = mappers.NewMapper(mappers.MapperType(cartridge.MapperNumber), mappers.Specs{})
 
 	// CHR ROM data
 	cartridge.ChrROM = make([]byte, ChrROMBankSize*int(cartridge.ChrROMBanks))
